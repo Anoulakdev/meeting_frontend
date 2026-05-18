@@ -8,7 +8,7 @@ const withPWA = withPWAInit({
 });
 
 const basePath =
-  process.env.APP_ENV === "prod"
+  process.env.NODE_ENV === "production"
     ? "/meeting_notice"
     : "";
 
