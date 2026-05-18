@@ -7,8 +7,21 @@ const withPWA = withPWAInit({
   register: true,
 });
 
+const basePath =
+  process.env.APP_ENV === "prod"
+    ? "/meeting_notice"
+    : "";
+
 const nextConfig: NextConfig = {
-  transpilePackages: ["crypto-js", "jspdf", "jspdf-autotable", "xlsx"],
+  basePath,
+
+  transpilePackages: [
+    "crypto-js",
+    "jspdf",
+    "jspdf-autotable",
+    "xlsx",
+  ],
+
   eslint: {
     ignoreDuringBuilds: true,
   },
