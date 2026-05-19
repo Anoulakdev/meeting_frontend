@@ -24,7 +24,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token หมดอายุหรือไม่ถูกต้อง → ออกไปหน้า login
       if (typeof window !== "undefined") {
-        window.location.href = "/signin";
+        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        window.location.href = `${basePath}/signin`;
       }
     }
     return Promise.reject(error);

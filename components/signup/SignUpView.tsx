@@ -51,7 +51,8 @@ export default function SignUpView() {
     // TODO: implement actual sign-up logic here
     setTimeout(() => {
       setLoading(false);
-      window.location.href = "/dashboard";
+      const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+      window.location.href = `${basePath}/dashboard`;
     }, 1800);
   };
 

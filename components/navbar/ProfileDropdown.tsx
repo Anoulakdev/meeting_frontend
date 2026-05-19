@@ -27,7 +27,8 @@ export function ProfileDropdown() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        const res = await fetch(`${basePath}/api/auth/me`);
         if (res.ok) {
           const data = await res.json();
           setUser(data);
@@ -43,7 +44,8 @@ export function ProfileDropdown() {
     setProfileOpen(false);
     setLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+      await fetch(`${basePath}/api/auth/logout`, { method: "POST" });
     } finally {
       // Always redirect even if the request fails
       router.push("/signin");

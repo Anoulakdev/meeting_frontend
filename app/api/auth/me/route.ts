@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     });
 
     const text = await res.text();
-    
+
     let data;
     try {
       data = JSON.parse(text);

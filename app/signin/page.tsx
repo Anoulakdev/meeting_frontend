@@ -5,5 +5,5 @@ export default function SignInPage() {
 }
 
 export const metadata = {
-  title: "Sign In",
+  title: "ເຂົ້າສູ່ລະບົບ",
 };

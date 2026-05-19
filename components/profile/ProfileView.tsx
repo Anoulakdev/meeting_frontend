@@ -10,7 +10,8 @@ export default function ProfileView() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        const res = await fetch(`${basePath}/api/auth/me`);
         if (res.ok) {
           const data = await res.json();
           setUser(data);

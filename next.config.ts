@@ -14,6 +14,8 @@ const basePath =
 
 const nextConfig: NextConfig = {
   basePath,
+  reactStrictMode: true,
+  poweredByHeader: false,
 
   transpilePackages: [
     "crypto-js",

@@ -38,14 +38,16 @@ export default function SignInView() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const res = await fetch("/api/auth/check");
+        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        const res = await fetch(`${basePath}/api/auth/check`);
         if (res.ok) {
           const data = await res.json();
           const roleId: number = data?.roleId;
+          const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
           if (roleId === 1) {
-            window.location.href = "/dashboard";
+            window.location.href = `${basePath}/dashboard`;
           } else if (roleId === 2) {
-            window.location.href = "/meetingdoc";
+            window.location.href = `${basePath}/meetingdoc`;
           } else {
             // Role not allowed via browser — show login form normally
             setCheckingSession(false);
@@ -95,7 +97,8 @@ export default function SignInView() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+      const res = await fetch(`${basePath}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -117,11 +120,11 @@ export default function SignInView() {
       }
 
       const roleId: number = data?.user?.roleId;
-
+      
       if (roleId === 1) {
-        window.location.href = "/dashboard";
+        window.location.href = `${basePath}/dashboard`;
       } else if (roleId === 2) {
-        window.location.href = "/meetingdoc";
+        window.location.href = `${basePath}/meetingdoc`;
       } else {
         setApiError(
           "ທ່ານບໍ່ມີສິດເຂົ້າຜ່ານ browser ໃຫ້ທ່ານເຂົ້າຜ່ານ mobile app",
