@@ -18,10 +18,12 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get('token')?.value;
 
+  const basePath = request.nextUrl.basePath;
+
   // ຖ້າບໍ່ມີ token (ບໍ່ໄດ້ເຂົ້າສູ່ລະບົບ)
   if (!token) {
     if (pathname !== '/signin') {
-      return NextResponse.redirect(new URL('/signin', request.url));
+      return NextResponse.redirect(new URL(`${basePath}/signin`, request.url));
     }
     return NextResponse.next();
   }
@@ -39,11 +41,11 @@ export function middleware(request: NextRequest) {
       // ຖ້າມີ token ແລ້ວ ແຕ່ພະຍາຍາມເຂົ້າໜ້າ signin ຫລື ໜ້າທຳອິດ ໃຫ້ສົ່ງໄປໜ້າຫຼັກຕາມ Role
       if (pathname === '/signin' || pathname === '/') {
         if (roleId === 1) {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
+          return NextResponse.redirect(new URL(`${basePath}/dashboard`, request.url));
         } else if (roleId === 2) {
-          return NextResponse.redirect(new URL('/meetingdoc', request.url));
+          return NextResponse.redirect(new URL(`${basePath}/meetingdoc`, request.url));
         } else {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
+          return NextResponse.redirect(new URL(`${basePath}/dashboard`, request.url));
         }
       }
 
@@ -53,17 +55,17 @@ export function middleware(request: NextRequest) {
 
       // ຖ້າເຂົ້າໜ້າຂອງ Superadmin ແຕ່ບໍ່ແມ່ນ Superadmin (roleId !== 1)
       if (isSuperadminRoute && roleId !== 1) {
-        return NextResponse.rewrite(new URL('/unauthorized', request.url));
+        return NextResponse.rewrite(new URL(`${basePath}/unauthorized`, request.url));
       }
 
       // ຖ້າເຂົ້າໜ້າຂອງ Admin ແຕ່ບໍ່ແມ່ນ Admin ຫລື Superadmin
       if (isAdminRoute && roleId !== 2) {
-        return NextResponse.rewrite(new URL('/unauthorized', request.url));
+        return NextResponse.rewrite(new URL(`${basePath}/unauthorized`, request.url));
       }
     }
   } catch (error) {
     // ຖ້າ token ມີບັນຫາ ໃຫ້ລຶບຖິ້ມແລ້ວໃຫ້ເຂົ້າສູ່ລະບົບໃໝ່
-    const response = NextResponse.redirect(new URL('/signin', request.url));
+    const response = NextResponse.redirect(new URL(`${basePath}/signin`, request.url));
     response.cookies.delete('token');
     return response;
   }
