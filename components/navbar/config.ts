@@ -73,7 +73,8 @@ export function useNavItems() {
   useEffect(() => {
     const fetchRole = async () => {
       try {
-        const res = await fetch("/api/auth/check");
+        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        const res = await fetch(`${basePath}/api/auth/check`);
         if (res.ok) {
           const data = await res.json();
           const roleId = data?.roleId;
