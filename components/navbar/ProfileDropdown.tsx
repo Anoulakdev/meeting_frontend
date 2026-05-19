@@ -43,12 +43,14 @@ export function ProfileDropdown() {
   const handleLogout = async () => {
     setProfileOpen(false);
     setLoggingOut(true);
+    const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
     try {
-      const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
       await fetch(`${basePath}/api/auth/logout`, { method: "POST" });
     } finally {
-      // Always redirect even if the request fails
-      router.push("/signin");
+      // Clear cached role from local storage
+      localStorage.removeItem("userRoleId");
+      // Always redirect even if the request fails with a full page reload
+      window.location.href = `${basePath}/signin`;
     }
   };
 

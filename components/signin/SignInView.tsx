@@ -43,6 +43,9 @@ export default function SignInView() {
         if (res.ok) {
           const data = await res.json();
           const roleId: number = data?.roleId;
+          if (roleId !== undefined && roleId !== null) {
+            localStorage.setItem("userRoleId", String(roleId));
+          }
           const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
           if (roleId === 1) {
             window.location.href = `${basePath}/dashboard`;
@@ -120,6 +123,9 @@ export default function SignInView() {
       }
 
       const roleId: number = data?.user?.roleId;
+      if (roleId !== undefined && roleId !== null) {
+        localStorage.setItem("userRoleId", String(roleId));
+      }
       
       if (roleId === 1) {
         window.location.href = `${basePath}/dashboard`;

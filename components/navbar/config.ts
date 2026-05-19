@@ -71,6 +71,19 @@ export function useNavItems() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 1. Try to load from localStorage first for instant display
+    const cachedRoleId = typeof window !== "undefined" ? localStorage.getItem("userRoleId") : null;
+    if (cachedRoleId) {
+      const roleId = parseInt(cachedRoleId, 10);
+      if (roleId === 1) {
+        setNavItems(SUPERADMIN_NAV_ITEMS);
+      } else {
+        setNavItems([]);
+      }
+      setLoading(false);
+    }
+
+    // 2. Fetch from server to validate/revalidate
     const fetchRole = async () => {
       try {
         const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
@@ -78,18 +91,24 @@ export function useNavItems() {
         if (res.ok) {
           const data = await res.json();
           const roleId = data?.roleId;
-          if (roleId === 1) {
-            setNavItems(SUPERADMIN_NAV_ITEMS);
-          } else if (roleId === 2) {
-            setNavItems([]); // Empty array for roleId = 2 as requested for future use
+          
+          if (roleId !== undefined && roleId !== null) {
+            localStorage.setItem("userRoleId", String(roleId));
+            if (roleId === 1) {
+              setNavItems(SUPERADMIN_NAV_ITEMS);
+            } else {
+              setNavItems([]);
+            }
           } else {
+            localStorage.removeItem("userRoleId");
             setNavItems([]);
           }
         } else {
+          localStorage.removeItem("userRoleId");
           setNavItems([]);
         }
       } catch (error) {
-        setNavItems([]);
+        console.error("Failed to revalidate role:", error);
       } finally {
         setLoading(false);
       }

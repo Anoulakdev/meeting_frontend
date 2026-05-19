@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     response.cookies.set("token", data.token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
+      sameSite: "lax",
       path: "/",
     });
   }
