@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -36,7 +36,7 @@ import { MeetingDoc } from "@/schemas/meetingDoc";
 import { encryptId } from "@/lib/crypto";
 import moment from "moment";
 
-const ROWS_PER_PAGE = 6;
+const ROWS_PER_PAGE = 7;
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -58,14 +58,28 @@ function getFileUrl(docfile: string | null): string | null {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function MeetingDocument() {
-  const { docs, loading, error, refetch } = useMeetingDocs();
-  const router = useRouter();
-
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(ROWS_PER_PAGE);
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
+
+  const { docs, total, totalPages, loading, error, refetch } = useMeetingDocs({
+    page: pageIndex + 1,
+    limit: pageSize,
+    search: globalFilter,
+    startDate: filterStartDate,
+    endDate: filterEndDate,
+  });
+
+  const router = useRouter();
+
+  // Reset to first page when search or date filters change
+  useEffect(() => {
+    setPageIndex(0);
+  }, [globalFilter, filterStartDate, filterEndDate]);
 
   // Modals
   const [addOpen, setAddOpen] = useState(false);
@@ -306,29 +320,32 @@ export function MeetingDocument() {
     []
   );
 
-  const filteredDocs = useMemo(() => {
-    return docs.filter((doc) => {
-      let valid = true;
-      if (filterStartDate) {
-        valid = valid && doc.startDate >= filterStartDate;
-      }
-      if (filterEndDate) {
-        valid = valid && doc.endDate <= filterEndDate;
-      }
-      return valid;
-    });
-  }, [docs, filterStartDate, filterEndDate]);
-
   const table = useReactTable({
-    data: filteredDocs,
+    data: docs,
     columns,
-    state: { globalFilter, columnFilters },
+    state: {
+      pagination: { pageIndex, pageSize },
+      globalFilter,
+      columnFilters,
+    },
+    onPaginationChange: (updater) => {
+      if (typeof updater === "function") {
+        const nextState = updater({ pageIndex, pageSize });
+        setPageIndex(nextState.pageIndex);
+        setPageSize(nextState.pageSize);
+      } else {
+        setPageIndex(updater.pageIndex);
+        setPageSize(updater.pageSize);
+      }
+    },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: ROWS_PER_PAGE } },
+    manualPagination: true,
+    manualFiltering: true,
+    pageCount: totalPages,
   });
 
   const generatePagination = () => {
@@ -443,7 +460,7 @@ export function MeetingDocument() {
           </div>
           <div className="flex items-center gap-2 sm:ml-auto">
             <span className="text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
-              {table.getFilteredRowModel().rows.length} ລາຍການ
+              {total} ລາຍການ
             </span>
             <button
               onClick={() => setShowFilters(!showFilters)}

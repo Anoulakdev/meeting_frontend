@@ -132,6 +132,103 @@ export function UserManagement() {
   const [roles, setRoles] = useState<{ id: number, name: string }[]>([]);
   const router = useRouter();
 
+  // Controlled Pagination and total counts
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: ROWS_PER_PAGE,
+  });
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // States for filter dropdown data
+  const [departmentList, setDepartmentList] = useState<{ id: number; department_name: string }[]>([]);
+  const [divisionList, setDivisionList] = useState<{ id: number; division_name: string }[]>([]);
+  const [positionList, setPositionList] = useState<{ id: number; pos_name: string }[]>([]);
+  const [roleList, setRoleList] = useState<{ id: number; name: string }[]>([]);
+
+  // Fetch filter options once on mount (excluding divisions)
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [depRes, posRes, roleRes] = await Promise.all([
+          apiClient.get<any[]>("/api/departments"),
+          apiClient.get<any[]>("/api/positions"),
+          apiClient.get<any[]>("/api/roles/selectrole"),
+        ]);
+        setDepartmentList(depRes.data);
+        setPositionList(posRes.data);
+        setRoleList(roleRes.data);
+      } catch (err) {
+        console.error("Failed to fetch filter options", err);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+
+  const selectedDepartmentId = useMemo(() => {
+    return (columnFilters.find(f => f.id === "department")?.value as string) || "";
+  }, [columnFilters]);
+
+  // Fetch divisions dynamically based on selected department ID
+  useEffect(() => {
+    const fetchDivisions = async () => {
+      try {
+        const url = selectedDepartmentId
+          ? `/api/divisions?departmentId=${selectedDepartmentId}`
+          : "/api/divisions";
+        const res = await apiClient.get<any[]>(url);
+        setDivisionList(res.data);
+
+        // Reset division filter if it's not valid for the new department
+        const selectedDivisionId = (columnFilters.find(f => f.id === "division")?.value as string) || "";
+        if (selectedDivisionId) {
+          const exists = res.data.some((d: any) => String(d.id) === selectedDivisionId);
+          if (!exists) {
+            setColumnFilters(prev => prev.filter(f => f.id !== "division"));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch divisions", err);
+      }
+    };
+    fetchDivisions();
+  }, [selectedDepartmentId]);
+
+  // Memoized options for Selects
+  const departmentOptions = useMemo(() => {
+    return [
+      { value: "", label: "All" },
+      ...departmentList.map(d => ({ value: String(d.id), label: d.department_name || "-" }))
+    ];
+  }, [departmentList]);
+
+  const divisionOptions = useMemo(() => {
+    return [
+      { value: "", label: "All" },
+      ...divisionList.map(d => ({ value: String(d.id), label: d.division_name || "-" }))
+    ];
+  }, [divisionList]);
+
+  const positionOptions = useMemo(() => {
+    return [
+      { value: "", label: "All" },
+      ...positionList.map(p => ({ value: String(p.id), label: p.pos_name || "-" }))
+    ];
+  }, [positionList]);
+
+  const roleOptions = useMemo(() => {
+    return [
+      { value: "", label: "All" },
+      ...roleList.map(r => ({ value: String(r.id), label: r.name || "-" }))
+    ];
+  }, [roleList]);
+
+  const statusOptions = [
+    { value: "", label: "All" },
+    { value: "Active", label: "Active" },
+    { value: "Inactive", label: "Inactive" },
+  ];
+
   // Modals
   const [editOpen, setEditOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -145,8 +242,43 @@ export function UserManagement() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<ApiUser[]>("/api/users");
-      const mappedUsers: User[] = res.data.map((u, i) => {
+      const depFilter = (columnFilters.find(f => f.id === "department")?.value as string) || "";
+      const divFilter = (columnFilters.find(f => f.id === "division")?.value as string) || "";
+      const posFilter = (columnFilters.find(f => f.id === "position")?.value as string) || "";
+      const roleFilter = (columnFilters.find(f => f.id === "role")?.value as string) || "";
+      const statusFilter = (columnFilters.find(f => f.id === "status")?.value as string) || "";
+
+      const params: Record<string, any> = {
+        page: pagination.pageIndex + 1,
+        limit: pagination.pageSize,
+      };
+
+      if (globalFilter.trim()) {
+        params.search = globalFilter.trim();
+      }
+      if (depFilter) params.departmentId = Number(depFilter);
+      if (divFilter) params.divisionId = Number(divFilter);
+      if (posFilter) params.posId = Number(posFilter);
+      if (roleFilter) params.roleId = Number(roleFilter);
+      if (statusFilter) params.status = statusFilter;
+
+      const res = await apiClient.get<any>("/api/users", { params });
+
+      let apiData: ApiUser[] = [];
+      let total = 0;
+      let totalPagesCount = 0;
+
+      if (Array.isArray(res.data)) {
+        apiData = res.data;
+        total = res.data.length;
+        totalPagesCount = Math.ceil(total / pagination.pageSize);
+      } else if (res.data && 'data' in res.data) {
+        apiData = res.data.data || [];
+        total = res.data.total || 0;
+        totalPagesCount = res.data.totalPages || 0;
+      }
+
+      const mappedUsers: User[] = apiData.map((u, i) => {
         const fn = u.employee?.first_name || "";
         const ln = u.employee?.last_name || "";
         const name = `${fn} ${ln}`.trim() || u.username;
@@ -169,12 +301,14 @@ export function UserManagement() {
         };
       });
       setUsers(mappedUsers);
+      setTotalCount(total);
+      setTotalPages(totalPagesCount);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pagination.pageIndex, pagination.pageSize, globalFilter, columnFilters]);
 
   useEffect(() => {
     fetchUsers();
@@ -533,20 +667,26 @@ export function UserManagement() {
   const table = useReactTable({
     data: users,
     columns,
+    pageCount: totalPages,
     state: {
       globalFilter,
       columnFilters,
+      pagination,
     },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: (updater) => {
+      const nextVal = typeof updater === 'function' ? updater(globalFilter) : updater;
+      setGlobalFilter(nextVal);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    onColumnFiltersChange: (updater) => {
+      const nextVal = typeof updater === 'function' ? updater(columnFilters) : updater;
+      setColumnFilters(nextVal);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: ROWS_PER_PAGE,
-      },
-    },
+    manualPagination: true,
+    manualFiltering: true,
   });
 
   const generatePagination = () => {
@@ -571,10 +711,6 @@ export function UserManagement() {
   };
 
 
-  const getUniqueOptions = (key: keyof User) => {
-    const opts = Array.from(new Set(users.map(u => u[key] as string).filter(Boolean)));
-    return [{ value: "", label: "All" }, ...opts.map(o => ({ value: o, label: o }))];
-  };
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-8">
@@ -639,7 +775,7 @@ export function UserManagement() {
           </div>
           <div className="flex items-center gap-2 sm:ml-auto">
             <span className="text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
-              {table.getFilteredRowModel().rows.length} user{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
+              {totalCount} user{totalCount !== 1 ? "s" : ""}
             </span>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -667,7 +803,7 @@ export function UserManagement() {
                 label="Department"
                 value={(table.getColumn("department")?.getFilterValue() as string) ?? ""}
                 onChange={(e) => table.getColumn("department")?.setFilterValue(e.target.value)}
-                options={getUniqueOptions("department")}
+                options={departmentOptions}
               />
             </div>
             <div>
@@ -675,7 +811,7 @@ export function UserManagement() {
                 label="Division"
                 value={(table.getColumn("division")?.getFilterValue() as string) ?? ""}
                 onChange={(e) => table.getColumn("division")?.setFilterValue(e.target.value)}
-                options={getUniqueOptions("division")}
+                options={divisionOptions}
               />
             </div>
             <div>
@@ -683,7 +819,7 @@ export function UserManagement() {
                 label="Position"
                 value={(table.getColumn("position")?.getFilterValue() as string) ?? ""}
                 onChange={(e) => table.getColumn("position")?.setFilterValue(e.target.value)}
-                options={getUniqueOptions("position")}
+                options={positionOptions}
               />
             </div>
             <div>
@@ -691,7 +827,7 @@ export function UserManagement() {
                 label="Role"
                 value={(table.getColumn("role")?.getFilterValue() as string) ?? ""}
                 onChange={(e) => table.getColumn("role")?.setFilterValue(e.target.value)}
-                options={getUniqueOptions("role")}
+                options={roleOptions}
               />
             </div>
             <div>
@@ -699,12 +835,15 @@ export function UserManagement() {
                 label="Status"
                 value={(table.getColumn("status")?.getFilterValue() as string) ?? ""}
                 onChange={(e) => table.getColumn("status")?.setFilterValue(e.target.value)}
-                options={getUniqueOptions("status")}
+                options={statusOptions}
               />
             </div>
             <div className="md:col-span-3 lg:col-span-5 flex justify-end">
               <button
-                onClick={() => setColumnFilters([])}
+                onClick={() => {
+                  setColumnFilters([]);
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
                 className="text-sm font-medium hover:underline text-brand"
                 style={{ color: "rgb(var(--brand))" }}
               >

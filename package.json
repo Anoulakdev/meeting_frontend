@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.16.1",
     "chart.js": "^4.5.1",

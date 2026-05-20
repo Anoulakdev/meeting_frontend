@@ -20,7 +20,6 @@ export const metadata: Metadata = {
     default: "AdminOS",
   },
   description: "Modern Admin Dashboard Template",
-  manifest: "/manifest.json",
 };
 
 export const viewport: import("next").Viewport = {
