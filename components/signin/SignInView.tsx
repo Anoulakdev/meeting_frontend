@@ -126,7 +126,7 @@ export default function SignInView() {
       if (roleId !== undefined && roleId !== null) {
         localStorage.setItem("userRoleId", String(roleId));
       }
-      
+
       if (roleId === 1) {
         window.location.href = `${basePath}/dashboard`;
       } else if (roleId === 2) {
@@ -428,7 +428,7 @@ export default function SignInView() {
                 </div>
                 <span className="text-lg font-bold tracking-tight"
                   style={{ color: "rgb(var(--text-primary))", fontFamily: "var(--font-display)" }}>
-                  ລະບົບແຈ້ງເຕືອນ
+                  ລະບົບແຈ້ງເຕືອນປະຊຸມ
                 </span>
               </div>
 
@@ -492,8 +492,14 @@ export default function SignInView() {
                       value={username}
                       onFocus={() => setFocusField("username")}
                       onBlur={() => setFocusField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === " ") {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
-                        setUsername(e.target.value);
+                        const val = e.target.value.replace(/\s/g, "");
+                        setUsername(val);
                         if (errors.username)
                           setErrors((prev) => ({ ...prev, username: undefined }));
                       }}
@@ -566,8 +572,14 @@ export default function SignInView() {
                       value={password}
                       onFocus={() => setFocusField("password")}
                       onBlur={() => setFocusField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === " ") {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
-                        setPassword(e.target.value);
+                        const val = e.target.value.replace(/\s/g, "");
+                        setPassword(val);
                         if (errors.password)
                           setErrors((prev) => ({ ...prev, password: undefined }));
                       }}
