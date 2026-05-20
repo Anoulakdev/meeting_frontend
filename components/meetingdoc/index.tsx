@@ -81,6 +81,7 @@ export function MeetingDocument() {
     setPageIndex(0);
   }, [globalFilter, filterStartDate, filterEndDate]);
 
+
   // Modals
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
