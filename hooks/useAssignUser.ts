@@ -59,6 +59,7 @@ export const AdminUserSchema = z.object({
 const AssignedUserSchema = z.object({
   assign: z.object({
     id: z.number(),
+    employee: EmployeeDetailSchema.optional().nullable(),
   }).optional(),
 });
 

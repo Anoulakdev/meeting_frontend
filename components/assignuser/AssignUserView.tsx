@@ -91,6 +91,57 @@ export default function AssignUserView() {
   // Use pendingIds if set (user has made changes), else fall back to server state
   const checkedIds: Set<number> = pendingIds ?? serverAssignedIds;
 
+  const selectedUsers = useMemo(() => {
+    const list: Array<{
+      id: number;
+      employee: {
+        first_name: string;
+        last_name: string;
+        gender?: string | null;
+        emp_code: string;
+        empimg?: string | null;
+      };
+    }> = [];
+
+    for (const id of Array.from(checkedIds)) {
+      // 1. Try to find in allUsers
+      const foundInAll = allUsers.find((u) => u.id === id);
+      if (foundInAll) {
+        list.push(foundInAll);
+        continue;
+      }
+
+      // 2. Try to find in doc.assigns
+      const foundInAssigns = doc?.assigns?.find((a) => a.assign?.id === id);
+      if (foundInAssigns?.assign?.employee) {
+        list.push({
+          id,
+          employee: {
+            first_name: foundInAssigns.assign.employee.first_name,
+            last_name: foundInAssigns.assign.employee.last_name,
+            gender: foundInAssigns.assign.employee.gender,
+            emp_code: foundInAssigns.assign.employee.emp_code,
+            empimg: foundInAssigns.assign.employee.empimg,
+          },
+        });
+      } else {
+        // Fallback
+        list.push({
+          id,
+          employee: {
+            first_name: "ຜູ້ໃຊ້",
+            last_name: `ລະຫັດ ${id}`,
+            gender: null,
+            emp_code: "-",
+            empimg: null,
+          },
+        });
+      }
+    }
+
+    return list;
+  }, [checkedIds, allUsers, doc]);
+
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return allUsers;
@@ -341,54 +392,52 @@ export default function AssignUserView() {
                   className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
                   style={{ background: "rgb(var(--brand)/0.12)", color: "rgb(var(--brand))" }}
                 >
-                  {checkedIds.size}
+                  {selectedUsers.length}
                 </span>
               </div>
               <div className="p-3 space-y-1.5 max-h-64 overflow-y-auto">
-                {checkedIds.size === 0 ? (
+                {selectedUsers.length === 0 ? (
                   <p className="text-xs text-center py-6" style={{ color: "rgb(var(--text-secondary))" }}>
                     ຍັງບໍ່ໄດ້ເລືອກຜູ້ໃຊ້
                   </p>
                 ) : (
-                  allUsers
-                    .filter((u) => checkedIds.has(u.id))
-                    .map((u) => (
-                      <div
-                        key={u.id}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
-                        style={{
-                          background: "rgba(16,185,129,0.07)",
-                          border: "1px solid rgba(16,185,129,0.2)",
-                        }}
-                      >
-                        {u.employee.empimg ? (
-                          <img
-                            src={u.employee.empimg}
-                            alt={fullName(u)}
-                            className="w-7 h-7 rounded-full object-cover object-top shrink-0"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                            style={{ background: avatarColor(u.id) }}
-                          >
-                            {u.employee.first_name.charAt(0)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "rgb(var(--text-primary))" }}>
-                            {genderPrefix(u.employee.gender)} {fullName(u)}
-                          </p>
-                          <p className="text-[10px]" style={{ color: "rgb(var(--text-secondary))" }}>
-                            {u.employee.emp_code}
-                          </p>
+                  selectedUsers.map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                      style={{
+                        background: "rgba(16,185,129,0.07)",
+                        border: "1px solid rgba(16,185,129,0.2)",
+                      }}
+                    >
+                      {u.employee.empimg ? (
+                        <img
+                          src={u.employee.empimg}
+                          alt={fullName(u as any)}
+                          className="w-7 h-7 rounded-full object-cover object-top shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                          style={{ background: avatarColor(u.id) }}
+                        >
+                          {u.employee.first_name.charAt(0)}
                         </div>
-                        {saving && <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "rgb(var(--text-secondary))" }} />}
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                          {genderPrefix(u.employee.gender)} {fullName(u as any)}
+                        </p>
+                        <p className="text-[10px]" style={{ color: "rgb(var(--text-secondary))" }}>
+                          {u.employee.emp_code}
+                        </p>
                       </div>
-                    ))
+                      {saving && <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "rgb(var(--text-secondary))" }} />}
+                    </div>
+                  ))
                 )}
               </div>
             </div>
