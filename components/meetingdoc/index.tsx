@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Plus,
   Search,
@@ -35,6 +36,40 @@ import { useMeetingDocs } from "@/hooks/useMeetingDocs";
 import { MeetingDoc } from "@/schemas/meetingDoc";
 import { encryptId } from "@/lib/crypto";
 import moment from "moment";
+
+function ButtonTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPos({ x: rect.left + rect.width / 2, y: rect.top });
+    setShow(true);
+  };
+
+  return (
+    <div className="inline-block relative">
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShow(false)}
+        onMouseDown={() => setShow(false)}
+        className="flex items-center justify-center"
+      >
+        {children}
+      </div>
+      {show && text && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full bg-gray-900/95 dark:bg-gray-100/95 backdrop-blur-sm text-white dark:text-gray-900 text-xs font-semibold py-1.5 px-3 rounded-xl shadow-xl border border-white/10 dark:border-black/5 whitespace-nowrap transition-all duration-200"
+          style={{ left: pos.x, top: pos.y - 6 }}
+        >
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900/95 dark:border-t-gray-100/95"></div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 const ROWS_PER_PAGE = 7;
 
@@ -254,64 +289,67 @@ export function MeetingDocument() {
 
           return (
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => {
-                  const encrypted = encryptId(doc.id);
-                  router.push(`/assignuser?id=${encrypted}`);
-                }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                style={{
-                  background: hasAssigns
-                    ? "linear-gradient(135deg, rgb(245,158,11), rgb(217,119,6))" // Orange for Update
-                    : "linear-gradient(135deg, rgb(16,185,129), rgb(5,150,105))", // Green for Assign
-                  color: "white"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = hasAssigns
-                    ? "0 4px 12px rgba(245,158,11,0.3)"
-                    : "0 4px 12px rgba(16,185,129,0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
-                }}
-                title={hasAssigns ? "Update assignuser" : "Assign User"}
-              >
-                <Users className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => openEdit(doc)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                style={{ background: "linear-gradient(135deg, rgb(99,102,241), rgb(67,56,202))", color: "white" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
-                }}
-                title="Edit"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => openDelete(doc)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                style={{ background: "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))", color: "white" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
-                }}
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <ButtonTooltip text={hasAssigns ? "ແກ້ໄຂການມອບໝາຍ" : "ມອບໝາຍຜູ້ໃຊ້"}>
+                <button
+                  onClick={() => {
+                    const encrypted = encryptId(doc.id);
+                    router.push(`/assignuser?id=${encrypted}`);
+                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
+                  style={{
+                    background: hasAssigns
+                      ? "linear-gradient(135deg, rgb(245,158,11), rgb(217,119,6))" // Orange for Update
+                      : "linear-gradient(135deg, rgb(16,185,129), rgb(5,150,105))", // Green for Assign
+                    color: "white"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = hasAssigns
+                      ? "0 4px 12px rgba(245,158,11,0.3)"
+                      : "0 4px 12px rgba(16,185,129,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                  }}
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
+              <ButtonTooltip text="ແກ້ໄຂ">
+                <button
+                  onClick={() => openEdit(doc)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
+                  style={{ background: "linear-gradient(135deg, rgb(99,102,241), rgb(67,56,202))", color: "white" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.35)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                  }}
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
+              <ButtonTooltip text="ລົບ">
+                <button
+                  onClick={() => openDelete(doc)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
+                  style={{ background: "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))", color: "white" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
             </div>
           );
         },

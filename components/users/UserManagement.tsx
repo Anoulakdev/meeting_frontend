@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   Edit2,
@@ -13,6 +14,7 @@ import {
   RefreshCw,
   KeyRound,
   UserCog,
+  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -29,6 +31,7 @@ import {
 } from "@tanstack/react-table";
 import { EditUserModal } from "./EditUserModal";
 import apiClient from "@/lib/axiosInstance";
+import { encryptId } from "@/lib/crypto";
 
 export type ApiUser = {
   id: number;
@@ -106,16 +109,51 @@ function TableTooltip({ text, children }: { text: string; children: React.ReactN
       >
         {children}
       </div>
-      {show && text && text !== "-" && (
+      {show && text && text !== "-" && typeof document !== "undefined" && createPortal(
         <div
           className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 text-xs py-1.5 px-3 rounded-lg shadow-2xl whitespace-nowrap transition-opacity"
           style={{ left: pos.x, top: pos.y - 6 }}
         >
           {text}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-100"></div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
+  );
+}
+
+function ButtonTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPos({ x: rect.left + rect.width / 2, y: rect.top });
+    setShow(true);
+  };
+
+  return (
+    <div className="inline-block relative">
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShow(false)}
+        onMouseDown={() => setShow(false)}
+        className="flex items-center justify-center"
+      >
+        {children}
+      </div>
+      {show && text && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full bg-gray-900/95 dark:bg-gray-100/95 backdrop-blur-sm text-white dark:text-gray-900 text-xs font-semibold py-1.5 px-3 rounded-xl shadow-xl border border-white/10 dark:border-black/5 whitespace-nowrap transition-all duration-200"
+          style={{ left: pos.x, top: pos.y - 6 }}
+        >
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900/95 dark:border-t-gray-100/95"></div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 
@@ -599,63 +637,87 @@ export function UserManagement() {
           const user = row.original;
           return (
             <div className="relative flex items-center gap-1">
-              <button
-                onClick={() => openEdit(user)}
-                className="p-2 rounded-lg transition-all"
-                style={{ background: "rgba(245, 158, 11, 0.1)", color: "rgb(245, 158, 11)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(245, 158, 11, 0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(245, 158, 11, 0.1)";
-                }}
-                title="ແກ້ໄຂສິດ"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
+              <ButtonTooltip text="ແກ້ໄຂສິດ">
+                <button
+                  onClick={() => openEdit(user)}
+                  className="p-2 rounded-lg transition-all"
+                  style={{ background: "rgba(245, 158, 11, 0.1)", color: "rgb(245, 158, 11)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(245, 158, 11, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(245, 158, 11, 0.1)";
+                  }}
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
 
-              <button
-                onClick={() => {
-                  setUserToReset(user);
-                  setResetModalOpen(true);
-                }}
-                className="p-2 rounded-lg transition-all"
-                style={{ background: "rgba(239, 68, 68, 0.1)", color: "rgb(239, 68, 68)" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
-                }}
-                title="ຣີເຊັດລະຫັດຜ່ານ"
-              >
-                <KeyRound className="w-4 h-4" />
-              </button>
+              <ButtonTooltip text="ຣີເຊັດລະຫັດຜ່ານ">
+                <button
+                  onClick={() => {
+                    setUserToReset(user);
+                    setResetModalOpen(true);
+                  }}
+                  className="p-2 rounded-lg transition-all"
+                  style={{ background: "rgba(239, 68, 68, 0.1)", color: "rgb(239, 68, 68)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                  }}
+                >
+                  <KeyRound className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
 
-              <button
-                onClick={() => router.push(`/responsible?id=${user.id}`)}
-                className="p-2 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                disabled={!((user.raw as any).roleId === 2 || (user.raw as any).role?.id === 2)}
-                style={{
-                  background: "rgba(var(--brand), 0.1)",
-                  color: "rgb(var(--brand))"
-                }}
-                onMouseEnter={(e) => {
-                  if ((user.raw as any).roleId === 2 || (user.raw as any).role?.id === 2) {
-                    e.currentTarget.style.background = "rgba(var(--brand), 0.2)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(var(--brand), 0.1)";
-                }}
-                title={
+              <ButtonTooltip text="FCM Token">
+                <button
+                  onClick={() => {
+                    const encrypted = encryptId(user.id);
+                    router.push(`/fcmtoken?id=${encrypted}`);
+                  }}
+                  className="p-2 rounded-lg transition-all"
+                  style={{ background: "rgba(14, 165, 233, 0.1)", color: "rgb(14, 165, 233)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(14, 165, 233, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(14, 165, 233, 0.1)";
+                  }}
+                >
+                  <Bell className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
+
+              <ButtonTooltip
+                text={
                   ((user.raw as any).roleId === 2 || (user.raw as any).role?.id === 2)
                     ? "ກຳນົດຄວາມຮັບຜິດຊອບ"
                     : "ສະເພາະສິດ Role 2 ເທົ່ານັ້ນ"
                 }
               >
-                <UserCog className="w-4 h-4" />
-              </button>
+                <button
+                  onClick={() => router.push(`/responsible?id=${user.id}`)}
+                  className="p-2 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={!((user.raw as any).roleId === 2 || (user.raw as any).role?.id === 2)}
+                  style={{
+                    background: "rgba(var(--brand), 0.1)",
+                    color: "rgb(var(--brand))"
+                  }}
+                  onMouseEnter={(e) => {
+                    if ((user.raw as any).roleId === 2 || (user.raw as any).role?.id === 2) {
+                      e.currentTarget.style.background = "rgba(var(--brand), 0.2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(var(--brand), 0.1)";
+                  }}
+                >
+                  <UserCog className="w-4 h-4" />
+                </button>
+              </ButtonTooltip>
             </div>
           );
         },
