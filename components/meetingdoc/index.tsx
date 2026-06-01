@@ -287,6 +287,11 @@ export function MeetingDocument() {
           const doc = row.original;
           const hasAssigns = doc.assigns && doc.assigns.length > 0;
 
+          // Check if meeting has passed
+          const endDateStr = doc.endDate ? (doc.endDate.includes('T') ? doc.endDate.split('T')[0] : doc.endDate) : "";
+          const endTimeStr = doc.endTime ? (doc.endTime.length === 5 ? `${doc.endTime}:00` : doc.endTime) : "00:00:00";
+          const isPassed = endDateStr && endTimeStr ? new Date(`${endDateStr}T${endTimeStr}`) < new Date() : false;
+
           return (
             <div className="flex items-center gap-1.5">
               <ButtonTooltip text={hasAssigns ? "ແກ້ໄຂການມອບໝາຍ" : "ມອບໝາຍຜູ້ໃຊ້"}>
@@ -333,18 +338,28 @@ export function MeetingDocument() {
                   <Edit2 className="w-4 h-4" />
                 </button>
               </ButtonTooltip>
-              <ButtonTooltip text="ລົບ">
+              <ButtonTooltip text={isPassed ? "ການປະຊຸມສິ້ນສຸດແລ້ວ (ບໍ່ສາມາດລົບໄດ້)" : "ລົບ"}>
                 <button
-                  onClick={() => openDelete(doc)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                  style={{ background: "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))", color: "white" }}
+                  onClick={() => !isPassed && openDelete(doc)}
+                  disabled={isPassed}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm disabled:cursor-not-allowed"
+                  style={{
+                    background: isPassed
+                      ? "rgba(239, 68, 68, 0.4)"
+                      : "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))",
+                    color: "white"
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
+                    if (!isPassed) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                    if (!isPassed) {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                    }
                   }}
                 >
                   <Trash2 className="w-4 h-4" />

@@ -824,7 +824,7 @@ export function UserManagement() {
               type="text"
               placeholder="ຄົ້ນຫາ..."
               value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
+              onChange={(e) => table.setGlobalFilter(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl text-sm outline-none transition-all"
               style={{
                 background: "rgb(var(--bg))",
