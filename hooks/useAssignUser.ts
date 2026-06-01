@@ -63,6 +63,11 @@ const AssignedUserSchema = z.object({
   }).optional(),
 });
 
+const DetailDocSchema = z.object({
+  id: z.number(),
+  dateActive: z.string(),
+});
+
 const MeetingDocDetailSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -74,6 +79,7 @@ const MeetingDocDetailSchema = z.object({
   location: z.string(),
   docfile: z.string().nullable(),
   assigns: z.array(AssignedUserSchema).optional(),
+  detailDocs: z.array(DetailDocSchema).optional(),
 });
 
 export type AdminUser = z.infer<typeof AdminUserSchema>;
@@ -132,13 +138,14 @@ export function useAssignUser(meetingDocId: number | null) {
     fetchData();
   }, [fetchData]);
 
-  const saveBulkAssign = async (userIds: number[]): Promise<boolean> => {
+  const saveBulkAssign = async (userIds: number[], includeWeekend: boolean): Promise<boolean> => {
     if (!meetingDocId) return false;
     setSaving(true);
     setSaveError(null);
     try {
       await apiClient.put(`/api/assigns/${meetingDocId}`, {
         userId: userIds,
+        includeWeekend,
       });
       await fetchData();
       return true;

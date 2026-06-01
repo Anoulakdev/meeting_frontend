@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -73,10 +73,58 @@ export default function AssignUserView() {
     return endDateTime < new Date();
   }, [doc]);
 
+  // Check whether the meeting spans over Saturday or Sunday
+  const hasWeekendInRange = useMemo(() => {
+    if (!doc?.startDate || !doc?.endDate) return false;
+    const start = moment(doc.startDate);
+    const end = moment(doc.endDate);
+    const current = start.clone();
+    while (current.isSameOrBefore(end, 'day')) {
+      const day = current.day();
+      if (day === 0 || day === 6) { // 0 = Sunday, 6 = Saturday
+        return true;
+      }
+      current.add(1, 'day');
+    }
+    return false;
+  }, [doc]);
+
+  // Check whether the meeting spans over a weekday (Monday to Friday)
+  const hasWeekdayInRange = useMemo(() => {
+    if (!doc?.startDate || !doc?.endDate) return false;
+    const start = moment(doc.startDate);
+    const end = moment(doc.endDate);
+    const current = start.clone();
+    while (current.isSameOrBefore(end, 'day')) {
+      const day = current.day();
+      if (day !== 0 && day !== 6) { // Not Sunday and Not Saturday
+        return true;
+      }
+      current.add(1, 'day');
+    }
+    return false;
+  }, [doc]);
+
+  // Sync includeWeekend checkbox with actual saved states if they exist, otherwise default to true
+  useEffect(() => {
+    if (doc) {
+      if (doc.detailDocs && doc.detailDocs.length > 0) {
+        const hasSavedWeekend = doc.detailDocs.some((d) => {
+          const day = moment(d.dateActive).day();
+          return day === 0 || day === 6;
+        });
+        setIncludeWeekend(hasSavedWeekend);
+      } else {
+        setIncludeWeekend(true);
+      }
+    }
+  }, [doc]);
+
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   // local checked set — mirrors what is currently assigned
   const [pendingIds, setPendingIds] = useState<Set<number> | null>(null);
+  const [includeWeekend, setIncludeWeekend] = useState(true);
 
   // Assigned user IDs from server
   const serverAssignedIds = useMemo<Set<number>>(
@@ -174,7 +222,7 @@ export default function AssignUserView() {
     // Send the array of AdminUser.id directly
     const userIds = Array.from(pendingIds);
 
-    const ok = await saveBulkAssign(userIds);
+    const ok = await saveBulkAssign(userIds, includeWeekend);
     if (ok) {
       showToast("ບັນທຶກສຳເລັດ", true);
       setPendingIds(null); // Reset tracking since server state will be up to date after refetch
@@ -372,6 +420,88 @@ export default function AssignUserView() {
                     </div>
                   </div>
                 ))}
+
+                {/* Weekend filter toggle */}
+                {hasWeekendInRange && hasWeekdayInRange && (
+                  <div className="pt-4 border-t space-y-2" style={{ borderColor: "rgb(var(--border))" }}>
+                    <label
+                      onClick={(e) => {
+                        if (isPassed) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className={`flex items-center justify-between p-3 rounded-xl transition-all ${isPassed ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                        }`}
+                      style={{
+                        background: includeWeekend ? "rgba(99, 102, 241, 0.06)" : "rgba(var(--bg), 0.5)",
+                        border: "1px solid " + (includeWeekend ? "rgba(99, 102, 241, 0.2)" : "rgb(var(--border))"),
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isPassed && !includeWeekend) {
+                          e.currentTarget.style.background = "rgb(var(--brand)/0.04)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isPassed) {
+                          e.currentTarget.style.background = includeWeekend ? "rgba(99, 102, 241, 0.06)" : "transparent";
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{
+                            background: includeWeekend ? "rgba(99,102,241,0.12)" : "rgba(var(--text-secondary), 0.1)",
+                            color: includeWeekend ? "rgb(99,102,241)" : "rgb(var(--text-secondary))"
+                          }}
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                            ລວມວັນເສົາ - ວັນອາທິດ
+                          </p>
+                          <p className="text-[10px] truncate" style={{ color: "rgb(var(--text-secondary))" }}>
+                            ບັນທຶກ ແລະ ໃຫ້ແຈ້ງເຕືອນໃນວັນພັກດ້ວຍ
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={includeWeekend}
+                          disabled={saving || isPassed}
+                          onChange={(e) => {
+                            if (!isPassed) {
+                              setIncludeWeekend(e.target.checked);
+                              // Mark as dirty so the Save button shows up even if userIds have not changed
+                              if (pendingIds === null) {
+                                setPendingIds(new Set(serverAssignedIds));
+                              }
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <div
+                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200"
+                          style={{
+                            borderColor: includeWeekend ? (isPassed ? "rgba(99,102,241,0.5)" : "rgb(99,102,241)") : "rgb(var(--border))",
+                            background: includeWeekend
+                              ? "linear-gradient(135deg,rgb(99,102,241),rgb(79,70,229))"
+                              : "transparent",
+                          }}
+                        >
+                          {includeWeekend && (
+                            <svg className="w-3 h-3 text-white" viewBox="0 0 14 10" fill="none">
+                              <path d="M1 5L5 9L13 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 
