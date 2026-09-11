@@ -84,7 +84,7 @@ function formatTimeRange(startTime: string, endTime: string): string {
   return `${startTime} - ${endTime}`;
 }
 
-function getFileUrl(docfile: string | null): string | null {
+function getFileUrl(docfile: string | null | undefined): string | null {
   if (!docfile) return null;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   return `${baseUrl}/upload/document/${docfile}`;
@@ -175,7 +175,7 @@ export function MeetingDocument() {
       const d = row.original;
       return [
         d.title,
-        d.location,
+        d.location ?? "-",
         formatDateRange(d.startDate, d.endDate),
         formatTimeRange(d.startTime, d.endTime),
       ];

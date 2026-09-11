@@ -4,7 +4,7 @@ export const EmployeeSchema = z.object({
   id: z.number(),
   first_name: z.string(),
   last_name: z.string(),
-  gender: z.string(),
+  gender: z.string().nullable().optional(),
   emp_code: z.string(),
 });
 
@@ -16,13 +16,13 @@ export const CreatedBySchema = z.object({
 export const MeetingDocSchema = z.object({
   id: z.number(),
   title: z.string(),
-  description: z.string(),
+  description: z.string().nullable().optional(),
   startDate: z.string(),
   endDate: z.string(),
   startTime: z.string(),
   endTime: z.string(),
-  location: z.string(),
-  docfile: z.string().nullable(),
+  location: z.string().nullable().optional(),
+  docfile: z.string().nullable().optional(),
   createdById: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),

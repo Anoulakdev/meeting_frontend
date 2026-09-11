@@ -59,7 +59,7 @@ export function middleware(request: NextRequest) {
       }
 
       // ຖ້າເຂົ້າໜ້າຂອງ Admin ແຕ່ບໍ່ແມ່ນ Admin ຫລື Superadmin
-      if (isAdminRoute && roleId !== 2) {
+      if (isAdminRoute && roleId !== 2 && roleId !== 1) {
         return NextResponse.rewrite(new URL(`${basePath}/unauthorized`, request.url));
       }
     }

@@ -71,13 +71,13 @@ const DetailDocSchema = z.object({
 const MeetingDocDetailSchema = z.object({
   id: z.number(),
   title: z.string(),
-  description: z.string(),
+  description: z.string().nullable().optional(),
   startDate: z.string(),
   endDate: z.string(),
   startTime: z.string(),
   endTime: z.string(),
-  location: z.string(),
-  docfile: z.string().nullable(),
+  location: z.string().nullable().optional(),
+  docfile: z.string().nullable().optional(),
   assigns: z.array(AssignedUserSchema).optional(),
   detailDocs: z.array(DetailDocSchema).optional(),
 });

@@ -27,12 +27,12 @@ export function EditModal({ open, onClose, onSuccess, selectedDoc }: EditModalPr
     if (open && selectedDoc) {
       setForm({
         title: selectedDoc.title,
-        description: selectedDoc.description,
+        description: selectedDoc.description || "",
         startDate: selectedDoc.startDate?.split('T')[0] || "",
         endDate: selectedDoc.endDate?.split('T')[0] || "",
         startTime: selectedDoc.startTime,
         endTime: selectedDoc.endTime,
-        location: selectedDoc.location,
+        location: selectedDoc.location || "",
       });
       setFile(null);
       setSaving(false);

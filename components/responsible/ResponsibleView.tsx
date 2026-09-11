@@ -31,6 +31,14 @@ export default function ResponsibleView() {
     apiClient.get(`/api/users/${userId}`)
       .then(res => {
         setUserData(res.data);
+        if (res.data?.responsibles && Array.isArray(res.data.responsibles)) {
+          const ids = res.data.responsibles.map((r: any) => r.divisionId).filter(Boolean);
+          setSelectedDivisionIds(new Set(ids));
+          const firstDeptId = res.data.responsibles.find((r: any) => r.division?.departmentId)?.division?.departmentId;
+          if (firstDeptId) {
+            setSelectedDepartmentId(firstDeptId);
+          }
+        }
       })
       .catch(err => console.error("Failed to load user details:", err));
   }, [userId]);
@@ -236,7 +244,7 @@ export default function ResponsibleView() {
             <div className="mt-auto pt-6">
               <button
                 onClick={handleSave}
-                disabled={saving || selectedDivisionIds.size === 0}
+                disabled={saving}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "rgb(var(--brand))", boxShadow: "0 4px 12px rgba(var(--brand), 0.2)" }}
               >

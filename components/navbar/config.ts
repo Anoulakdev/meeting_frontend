@@ -63,7 +63,12 @@ export type NavItem =
 const SUPERADMIN_NAV_ITEMS: NavItem[] = [
   { label: "ໜ້າຫຼັກ", href: "/dashboard", icon: LayoutDashboard },
   { label: "ຜູ້ໃຊ້ງານ", href: "/users", icon: Users },
+  { label: "ເອກະສານກອງປະຊຸມ", href: "/meetingdoc", icon: FileText },
   { label: "sync ຂໍ້ມູນ", href: "/syncdata", icon: Users },
+];
+
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { label: "ເອກະສານກອງປະຊຸມ", href: "/meetingdoc", icon: FileText },
 ];
 
 export function useNavItems() {
@@ -77,6 +82,8 @@ export function useNavItems() {
       const roleId = parseInt(cachedRoleId, 10);
       if (roleId === 1) {
         setNavItems(SUPERADMIN_NAV_ITEMS);
+      } else if (roleId === 2) {
+        setNavItems(ADMIN_NAV_ITEMS);
       } else {
         setNavItems([]);
       }
@@ -96,6 +103,8 @@ export function useNavItems() {
             localStorage.setItem("userRoleId", String(roleId));
             if (roleId === 1) {
               setNavItems(SUPERADMIN_NAV_ITEMS);
+            } else if (roleId === 2) {
+              setNavItems(ADMIN_NAV_ITEMS);
             } else {
               setNavItems([]);
             }
