@@ -9,18 +9,21 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  X,
   Download,
   FileText,
   Loader2,
   AlertCircle,
   RefreshCw,
-  Users,
+  Building,
   Calendar,
-  X,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { encryptId } from "@/lib/crypto";
 import { Modal } from "@/components/ui/Modal";
-import { Select, Button } from "@/components/ui/FormElements";
+import { Button } from "@/components/ui/FormElements";
 import {
   useReactTable,
   getCoreRowModel,
@@ -33,10 +36,10 @@ import {
 import { AddModal } from "./AddModal";
 import { EditModal } from "./EditModal";
 import { DeleteModal } from "./DeleteModal";
-import { useMeetingDocs } from "@/hooks/useMeetingDocs";
+import { useRelatedDocs } from "@/hooks/useRelatedDocs";
 import { useDebounce } from "@/hooks/useDebounce";
-import { MeetingDoc } from "@/schemas/meetingDoc";
-import { encryptId } from "@/lib/crypto";
+import { RelatedDoc, Department } from "@/schemas/relatedDoc";
+import apiClient from "@/lib/axiosInstance";
 import moment from "moment";
 
 function ButtonTooltip({ text, children }: { text: string; children: React.ReactNode }) {
@@ -75,145 +78,81 @@ function ButtonTooltip({ text, children }: { text: string; children: React.React
 
 const ROWS_PER_PAGE = 7;
 
-// ── helpers ─────────────────────────────────────────────────────────────────
-
-function formatDateRange(startDate: string, endDate: string): string {
-  if (startDate === endDate) return `${moment(startDate).format('DD/MM/YYYY')}`;
-  return `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`;
-}
-
-function formatTimeRange(startTime: string, endTime: string): string {
-  return `${startTime} - ${endTime}`;
-}
-
 function getFileUrl(docfile: string | null | undefined): string | null {
   if (!docfile) return null;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   return `${baseUrl}/upload/document/${docfile}`;
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
-
-export function MeetingDocument() {
+export function RelatedDocument() {
+  const router = useRouter();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(ROWS_PER_PAGE);
   const [globalFilter, setGlobalFilter] = useState("");
-  const debouncedSearch = useDebounce(globalFilter, 300);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [filterDepartmentId, setFilterDepartmentId] = useState("");
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const { docs, total, totalPages, loading, error, refetch } = useMeetingDocs({
+  // Department dropdown options
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await apiClient.get<Department[]>("/api/departments/select");
+        if (Array.isArray(res.data)) {
+          setDepartments(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load departments:", err);
+      }
+    };
+    fetchDepts();
+  }, []);
+
+  const debouncedSearch = useDebounce(globalFilter, 300);
+
+  const { docs, total, totalPages, loading, error, refetch } = useRelatedDocs({
     page: pageIndex + 1,
     limit: pageSize,
     search: debouncedSearch,
+    departmentId: filterDepartmentId,
     startDate: filterStartDate,
     endDate: filterEndDate,
   });
 
-  const router = useRouter();
-
-  // Reset to first page when debounced search or date filters change
+  // Reset to first page when search, department or date filters change
   useEffect(() => {
     setPageIndex(0);
-  }, [debouncedSearch, filterStartDate, filterEndDate]);
-
+  }, [debouncedSearch, filterDepartmentId, filterStartDate, filterEndDate]);
 
   // Modals
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<MeetingDoc | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<RelatedDoc | null>(null);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const openEdit = (doc: MeetingDoc) => {
+  const openEdit = (doc: RelatedDoc) => {
     setSelectedDoc(doc);
     setEditOpen(true);
   };
 
-  const openDelete = (doc: MeetingDoc) => {
+  const openDelete = (doc: RelatedDoc) => {
     setSelectedDoc(doc);
     setDeleteOpen(true);
   };
 
-  // ── Export helpers ───────────────────────────────────────────────────────────
-
-  const exportExcel = async () => {
-    const XLSX = await import("xlsx");
-    const exportData = table.getFilteredRowModel().rows.map((row) => {
-      const doc = row.original;
-      return {
-        ຫົວຂໍ້: doc.title,
-        ລາຍລະອຽດ: doc.description ?? "-",
-        ສະຖານທີ່: doc.location,
-        ວັນທີ: formatDateRange(doc.startDate, doc.endDate),
-        ເວລາ: formatTimeRange(doc.startTime, doc.endTime),
-      };
-    });
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "MeetingDocs");
-    XLSX.writeFile(workbook, "meetingdocs_export.xlsx");
-  };
-
-  const exportPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF("landscape");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(30, 58, 138);
-    doc.text("ລາຍງານໜັງສືເຊີນ", 14, 22);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
-
-    const tableData = table.getFilteredRowModel().rows.map((row) => {
-      const d = row.original;
-      return [
-        d.title,
-        d.location ?? "-",
-        formatDateRange(d.startDate, d.endDate),
-        formatTimeRange(d.startTime, d.endTime),
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 36,
-      head: [["ຫົວຂໍ້", "ສະຖານທີ່", "ວັນທີ", "ເວລາ"]],
-      body: tableData,
-      theme: "grid",
-      headStyles: {
-        fillColor: [30, 58, 138],
-        textColor: [255, 255, 255],
-        fontSize: 10,
-        fontStyle: "bold",
-        halign: "left",
-      },
-      bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      styles: { cellPadding: 5, lineColor: [226, 232, 240], lineWidth: 0.1 },
-    });
-
-    const url = doc.output("bloburl");
-    setPdfUrl(url.toString());
-    setPdfModalOpen(true);
-  };
-
   // ── Columns ──────────────────────────────────────────────────────────────────
 
-  const columns = useMemo<ColumnDef<MeetingDoc>[]>(
+  const columns = useMemo<ColumnDef<RelatedDoc>[]>(
     () => [
       {
         accessorKey: "title",
         header: "ຫົວຂໍ້",
-        size: 320,
+        size: 340,
         cell: ({ row }) => {
           const doc = row.original;
           const fileUrl = getFileUrl(doc.docfile);
@@ -236,7 +175,10 @@ export function MeetingDocument() {
                 {fileUrl && (
                   <button
                     type="button"
-                    onClick={() => { setPdfUrl(fileUrl); setPdfModalOpen(true); }}
+                    onClick={() => {
+                      setPdfUrl(fileUrl);
+                      setPdfModalOpen(true);
+                    }}
                     className="text-[11px] font-medium mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors"
                     style={{ background: "rgb(var(--brand) / 0.1)", color: "rgb(var(--brand))" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "rgb(var(--brand) / 0.2)")}
@@ -253,7 +195,7 @@ export function MeetingDocument() {
       {
         accessorKey: "description",
         header: "ລາຍລະອຽດ",
-        size: 280,
+        size: 320,
         cell: ({ getValue }) => {
           const val = getValue() as string | null | undefined;
           return (
@@ -270,41 +212,35 @@ export function MeetingDocument() {
         },
       },
       {
-        accessorKey: "location",
-        header: "ສະຖານທີ່",
+        id: "department",
+        header: "ຝ່າຍ",
         size: 180,
-        cell: ({ getValue }) => {
-          const val = getValue() as string | null | undefined;
-          return (
-            <span className="text-sm" style={{ color: "rgb(var(--text-secondary))" }}>
-              {val && val.trim() ? val : "-"}
+        accessorFn: (row) => row.department?.department_name ?? "-",
+        cell: ({ row }) => {
+          const dept = row.original.department;
+          return dept?.department_name ? (
+            <span
+              className="text-xs font-semibold px-2.5 py-1 rounded-full inline-block whitespace-nowrap"
+              style={{ background: "rgba(59,130,246,0.1)", color: "rgb(29,78,216)" }}
+            >
+              {dept.department_name}
+            </span>
+          ) : (
+            <span className="text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
+              -
             </span>
           );
         },
       },
       {
-        id: "date",
-        header: "ວັນທີ",
-        size: 150,
-        accessorFn: (row) => formatDateRange(row.startDate, row.endDate),
+        id: "createdAt",
+        header: "ວັນທີສ້າງ",
+        size: 130,
+        accessorFn: (row) => (row.createdAt ? moment(row.createdAt).format("DD/MM/YYYY") : "-"),
         cell: ({ getValue }) => (
           <span
             className="text-xs font-semibold px-2.5 py-1 rounded-full inline-block whitespace-nowrap"
             style={{ background: "rgba(34,197,94,0.1)", color: "rgb(21,128,61)" }}
-          >
-            {getValue() as string}
-          </span>
-        ),
-      },
-      {
-        id: "time",
-        header: "ເວລາ",
-        size: 130,
-        accessorFn: (row) => formatTimeRange(row.startTime, row.endTime),
-        cell: ({ getValue }) => (
-          <span
-            className="text-xs font-semibold px-2.5 py-1 rounded-full inline-block whitespace-nowrap"
-            style={{ background: "rgba(245,158,11,0.1)", color: "rgb(180,83,9)" }}
           >
             {getValue() as string}
           </span>
@@ -316,27 +252,21 @@ export function MeetingDocument() {
         size: 130,
         cell: ({ row }) => {
           const doc = row.original;
-          const hasAssigns = doc.assigns && doc.assigns.length > 0;
-
-          // Check if meeting has passed
-          const endDateStr = doc.endDate ? (doc.endDate.includes('T') ? doc.endDate.split('T')[0] : doc.endDate) : "";
-          const endTimeStr = doc.endTime ? (doc.endTime.length === 5 ? `${doc.endTime}:00` : doc.endTime) : "00:00:00";
-          const isPassed = endDateStr && endTimeStr ? new Date(`${endDateStr}T${endTimeStr}`) < new Date() : false;
-
+          const hasAssigns = doc.relatedAssigns && doc.relatedAssigns.length > 0;
           return (
             <div className="flex items-center gap-1.5">
               <ButtonTooltip text={hasAssigns ? "ແກ້ໄຂການມອບໝາຍ" : "ມອບໝາຍຜູ້ໃຊ້"}>
                 <button
                   onClick={() => {
                     const encrypted = encryptId(doc.id);
-                    router.push(`/assignuser?id=${encrypted}`);
+                    router.push(`/relatedassign?id=${encrypted}`);
                   }}
                   className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
                   style={{
                     background: hasAssigns
                       ? "linear-gradient(135deg, rgb(245,158,11), rgb(217,119,6))" // Orange for Update
                       : "linear-gradient(135deg, rgb(16,185,129), rgb(5,150,105))", // Green for Assign
-                    color: "white"
+                    color: "white",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
@@ -369,28 +299,21 @@ export function MeetingDocument() {
                   <Edit2 className="w-4 h-4" />
                 </button>
               </ButtonTooltip>
-              <ButtonTooltip text={isPassed ? "ການປະຊຸມສິ້ນສຸດແລ້ວ (ບໍ່ສາມາດລົບໄດ້)" : "ລົບ"}>
+              <ButtonTooltip text="ລົບ">
                 <button
-                  onClick={() => !isPassed && openDelete(doc)}
-                  disabled={isPassed}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm disabled:cursor-not-allowed"
+                  onClick={() => openDelete(doc)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
                   style={{
-                    background: isPassed
-                      ? "rgba(239, 68, 68, 0.4)"
-                      : "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))",
-                    color: "white"
+                    background: "linear-gradient(135deg, rgb(239,68,68), rgb(185,28,28))",
+                    color: "white",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isPassed) {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
-                    }
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isPassed) {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
-                    }
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
                   }}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -401,7 +324,6 @@ export function MeetingDocument() {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -450,8 +372,6 @@ export function MeetingDocument() {
     return pages;
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-8">
       {/* Header */}
@@ -461,7 +381,7 @@ export function MeetingDocument() {
             className="text-3xl font-bold mb-1"
             style={{ color: "rgb(var(--text-primary))", fontFamily: "var(--font-display)" }}
           >
-            ເອກະສານປະຊຸມ
+            ເອກະສານທີ່ຕິດພັນ
           </h1>
         </div>
         <div className="sm:ml-auto flex items-center gap-2 flex-wrap">
@@ -478,33 +398,9 @@ export function MeetingDocument() {
             <RefreshCw className="w-4 h-4" />
             <span className="hidden sm:block">ໂຫຼດໃໝ່</span>
           </button>
-          {/* <button
-            onClick={exportExcel}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-            style={{
-              background: "rgb(var(--card))",
-              border: "1px solid rgb(var(--border))",
-              color: "rgb(var(--success))",
-            }}
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:block">Excel</span>
-          </button> */}
-          {/* <button
-            onClick={exportPDF}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-            style={{
-              background: "rgb(var(--card))",
-              border: "1px solid rgb(var(--border))",
-              color: "rgb(var(--danger))",
-            }}
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:block">PDF</span>
-          </button> */}
           <button
             onClick={() => setAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
             style={{ background: "rgb(var(--brand))" }}
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
@@ -513,10 +409,13 @@ export function MeetingDocument() {
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Main Table Card */}
       <div
-        className="rounded-2xl overflow-hidden shadow-sm hover-card-effect"
-        style={{ background: "rgb(var(--card))", border: "1px solid rgb(var(--border))" }}
+        className="rounded-2xl shadow-sm overflow-hidden border hover-card-effect"
+        style={{
+          background: "rgb(var(--card))",
+          borderColor: "rgb(var(--border))",
+        }}
       >
         {/* Filter / Search Bar */}
         <div
@@ -563,6 +462,48 @@ export function MeetingDocument() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto sm:ml-auto">
+            {/* Department Filter */}
+            <div className="relative w-full sm:w-56 md:w-60 min-w-0">
+              <div
+                className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"
+                style={{ color: filterDepartmentId ? "rgb(var(--brand))" : "rgb(var(--text-secondary))" }}
+              >
+                <Building className="w-4 h-4" />
+              </div>
+              <select
+                value={filterDepartmentId}
+                onChange={(e) => setFilterDepartmentId(e.target.value)}
+                className="w-full pl-9 sm:pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm outline-none transition-all appearance-none cursor-pointer"
+                style={{
+                  background: filterDepartmentId ? "rgb(var(--brand) / 0.04)" : "rgb(var(--bg))",
+                  border: filterDepartmentId ? "1px solid rgb(var(--brand))" : "1px solid rgb(var(--border))",
+                  color: filterDepartmentId ? "rgb(var(--brand))" : "rgb(var(--text-primary))",
+                  fontWeight: filterDepartmentId ? 600 : 400,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "rgb(var(--brand))";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(var(--brand), 0.1)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = filterDepartmentId ? "rgb(var(--brand))" : "rgb(var(--border))";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <option value="">ທຸກຝ່າຍ</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.department_name}
+                  </option>
+                ))}
+              </select>
+              <div
+                className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"
+                style={{ color: filterDepartmentId ? "rgb(var(--brand))" : "rgb(var(--text-secondary))" }}
+              >
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+
             {/* Date Filters */}
             <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto min-w-0">
               <div className="relative flex-1 min-w-0 sm:w-36 md:w-40">
@@ -632,11 +573,12 @@ export function MeetingDocument() {
 
             {/* Actions: Clear & Total Badge */}
             <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-              {(globalFilter || filterStartDate || filterEndDate) ? (
+              {(globalFilter || filterDepartmentId || filterStartDate || filterEndDate) ? (
                 <button
                   type="button"
                   onClick={() => {
                     setGlobalFilter("");
+                    setFilterDepartmentId("");
                     setFilterStartDate("");
                     setFilterEndDate("");
                   }}
@@ -668,7 +610,6 @@ export function MeetingDocument() {
             </div>
           </div>
         </div>
-
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -709,7 +650,14 @@ export function MeetingDocument() {
             <table className="w-full min-w-[1000px] border-collapse">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b" style={{ borderColor: "rgb(var(--border))", background: "rgb(var(--brand) / 0.03)" }}>
+                  <tr
+                    key={headerGroup.id}
+                    className="border-b"
+                    style={{
+                      borderColor: "rgb(var(--border))",
+                      background: "rgb(var(--brand) / 0.03)",
+                    }}
+                  >
                     {headerGroup.headers.map((header) => {
                       const size = header.column.columnDef.size;
                       return (
@@ -783,16 +731,21 @@ export function MeetingDocument() {
           </div>
         )}
 
-        {/* Pagination */}
-        {!loading && !error && table.getPageCount() > 1 && (
+        {/* Pagination Bar */}
+        {total > 0 && (
           <div
-            className="flex items-center justify-between px-4 sm:px-6 py-4 border-t"
-            style={{ borderColor: "rgb(var(--border))" }}
+            className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-3.5 border-t"
+            style={{
+              borderColor: "rgb(var(--border))",
+              background: "rgb(var(--card))",
+            }}
           >
-            <span className="text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
-              ໜ້າ {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-            </span>
-            <div className="flex items-center gap-1">
+            <div className="text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
+              ສະແດງ {pageIndex * pageSize + 1} -{" "}
+              {Math.min((pageIndex + 1) * pageSize, total)} ຈາກທັງໝົດ {total} ລາຍການ
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
@@ -808,34 +761,24 @@ export function MeetingDocument() {
               {generatePagination().map((page, idx) => {
                 if (page === "...") {
                   return (
-                    <span
-                      key={`ellipsis-${idx}`}
-                      className="px-2 text-xs font-semibold"
-                      style={{ color: "rgb(var(--text-secondary))" }}
-                    >
+                    <span key={idx} className="px-2 text-xs" style={{ color: "rgb(var(--text-secondary))" }}>
                       ...
                     </span>
                   );
                 }
-                const i = page as number;
+                const isSelected = page === pageIndex;
                 return (
                   <button
-                    key={i}
-                    onClick={() => table.setPageIndex(i)}
+                    key={idx}
+                    onClick={() => table.setPageIndex(page as number)}
                     className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-all"
                     style={{
-                      background:
-                        table.getState().pagination.pageIndex === i
-                          ? "rgb(var(--brand))"
-                          : "rgb(var(--bg))",
-                      border: "1px solid rgb(var(--border))",
-                      color:
-                        table.getState().pagination.pageIndex === i
-                          ? "white"
-                          : "rgb(var(--text-secondary))",
+                      background: isSelected ? "rgb(var(--brand))" : "rgb(var(--bg))",
+                      color: isSelected ? "white" : "rgb(var(--text-primary))",
+                      border: isSelected ? "none" : "1px solid rgb(var(--border))",
                     }}
                   >
-                    {i + 1}
+                    {(page as number) + 1}
                   </button>
                 );
               })}
@@ -873,7 +816,6 @@ export function MeetingDocument() {
         selectedDoc={selectedDoc}
       />
 
-
       {/* ─── PDF PREVIEW MODAL ─── */}
       <Modal open={pdfModalOpen} onClose={() => setPdfModalOpen(false)} title="PDF Preview" size="xl">
         <div className="space-y-4">
@@ -888,7 +830,7 @@ export function MeetingDocument() {
                 className="w-full h-full flex items-center justify-center text-sm"
                 style={{ color: "rgb(var(--text-secondary))" }}
               >
-                Generating PDF...
+                Loading PDF...
               </div>
             )}
           </div>
@@ -902,7 +844,7 @@ export function MeetingDocument() {
                 if (pdfUrl) {
                   const a = document.createElement("a");
                   a.href = pdfUrl;
-                  a.download = "meetingdocs_export.pdf";
+                  a.download = "relateddoc.pdf";
                   a.click();
                 }
               }}

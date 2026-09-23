@@ -24,10 +24,20 @@ import {
   Info,
 } from "lucide-react";
 
-export type NavChild = { label: string; href: string; icon: React.ElementType; description?: string };
+export type NavChild = {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  description?: string;
+};
 export type NavItem =
   | { label: string; href: string; icon: React.ElementType; children?: never }
-  | { label: string; href?: never; icon: React.ElementType; children: NavChild[] };
+  | {
+      label: string;
+      href?: never;
+      icon: React.ElementType;
+      children: NavChild[];
+    };
 
 // const ALL_NAV_ITEMS: NavItem[] = [
 //   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -63,12 +73,12 @@ export type NavItem =
 const SUPERADMIN_NAV_ITEMS: NavItem[] = [
   { label: "ໜ້າຫຼັກ", href: "/dashboard", icon: LayoutDashboard },
   { label: "ຜູ້ໃຊ້ງານ", href: "/users", icon: Users },
-  { label: "ເອກະສານກອງປະຊຸມ", href: "/meetingdoc", icon: FileText },
   { label: "sync ຂໍ້ມູນ", href: "/syncdata", icon: Users },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { label: "ເອກະສານກອງປະຊຸມ", href: "/meetingdoc", icon: FileText },
+  { label: "ເອກະສານປະຊຸມ", href: "/meetingdoc", icon: FileText },
+  { label: "ເອກະສານທີ່ຕິດພັນ", href: "/relateddoc", icon: FolderOpen },
 ];
 
 export function useNavItems() {
@@ -77,7 +87,8 @@ export function useNavItems() {
 
   useEffect(() => {
     // 1. Try to load from localStorage first for instant display
-    const cachedRoleId = typeof window !== "undefined" ? localStorage.getItem("userRoleId") : null;
+    const cachedRoleId =
+      typeof window !== "undefined" ? localStorage.getItem("userRoleId") : null;
     if (cachedRoleId) {
       const roleId = parseInt(cachedRoleId, 10);
       if (roleId === 1) {
@@ -93,12 +104,13 @@ export function useNavItems() {
     // 2. Fetch from server to validate/revalidate
     const fetchRole = async () => {
       try {
-        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+        const basePath =
+          process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
         const res = await fetch(`${basePath}/api/auth/check`);
         if (res.ok) {
           const data = await res.json();
           const roleId = data?.roleId;
-          
+
           if (roleId !== undefined && roleId !== null) {
             localStorage.setItem("userRoleId", String(roleId));
             if (roleId === 1) {

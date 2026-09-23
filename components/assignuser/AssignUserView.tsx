@@ -15,6 +15,8 @@ import {
   FileText,
   CheckCircle2,
   Save,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import { decryptId } from "@/lib/crypto";
 import {
@@ -32,6 +34,12 @@ function formatDateRange(s: string, e: string) {
 }
 function formatTimeRange(s: string, e: string) {
   return `${s} - ${e}`;
+}
+
+function getFileUrl(docfile: string | null | undefined): string | null {
+  if (!docfile) return null;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  return `${baseUrl}/upload/document/${docfile}`;
 }
 
 // avatar initials color based on user id
@@ -64,6 +72,8 @@ export default function AssignUserView() {
     refetch,
     saveBulkAssign,
   } = useAssignUser(meetingDocId);
+
+  const fileUrl = getFileUrl(doc?.docfile);
 
   // Check if the meeting has passed
   const isPassed = useMemo(() => {
@@ -500,6 +510,45 @@ export default function AssignUserView() {
                         </div>
                       </div>
                     </label>
+                  </div>
+                )}
+
+                {/* Description */}
+                {doc?.description && (
+                  <div className="pt-3 border-t" style={{ borderColor: "rgb(var(--border))" }}>
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-wider mb-1"
+                      style={{ color: "rgb(var(--text-secondary))" }}
+                    >
+                      ລາຍລະອຽດ
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "rgb(var(--text-primary))" }}
+                    >
+                      {doc.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* File Attachment */}
+                {fileUrl && (
+                  <div className="pt-3 border-t" style={{ borderColor: "rgb(var(--border))" }}>
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-85 shadow-sm"
+                      style={{
+                        background: "rgb(var(--brand)/0.08)",
+                        color: "rgb(var(--brand))",
+                        border: "1px solid rgb(var(--brand)/0.2)",
+                      }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="truncate flex-1">ດາວໂຫຼດ / ເບິ່ງເອກະສານ</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                    </a>
                   </div>
                 )}
               </div>

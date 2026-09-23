@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const SUPERADMIN_ROUTES = ["/dashboard", "/users", "/syncdata"];
-const ADMIN_ROUTES = ["/meetingdoc"];
+const ADMIN_ROUTES = ["/meetingdoc", "/relateddoc", "/assignuser", "/relatedassign"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

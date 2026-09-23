@@ -108,7 +108,10 @@ export function useAssignUser(meetingDocId: number | null) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!meetingDocId) return;
+    if (!meetingDocId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
