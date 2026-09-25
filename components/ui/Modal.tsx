@@ -24,7 +24,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
       document.removeEventListener("keydown", handler);
       document.body.style.overflow = "";
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 

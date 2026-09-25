@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useNavItems } from "./config";
+import { InstallButton } from "@/components/pwa";
 
 interface MobileNavProps {
   mobileOpen: boolean;
@@ -94,6 +95,10 @@ export function MobileNav({ mobileOpen, setMobileOpen }: MobileNavProps) {
             </Link>
           );
         })}
+
+        <div className="pt-2 border-t mt-1" style={{ borderColor: "rgb(var(--border))" }}>
+          <InstallButton variant="menu" onInstalled={() => setMobileOpen(false)} />
+        </div>
       </nav>
     </div>
   );

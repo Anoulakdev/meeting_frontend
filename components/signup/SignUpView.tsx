@@ -95,7 +95,7 @@ export default function SignUpView() {
 
           <div className="relative z-10 mt-12 flex flex-col items-end gap-3">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 w-max max-w-xs text-left">
-              <p className="text-white text-sm font-medium mb-2">"AdminOS completely changed how our team manages data."</p>
+              <p className="text-white text-sm font-medium mb-2">&ldquo;AdminOS completely changed how our team manages data.&rdquo;</p>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-white/30"></div>
                 <span className="text-white/80 text-xs font-bold uppercase tracking-wider">Sarah J. — CEO</span>

@@ -81,6 +81,33 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: "ເອກະສານທີ່ຕິດພັນ", href: "/relateddoc", icon: FolderOpen },
 ];
 
+let inFlightAuthCheck: Promise<number | null> | null = null;
+
+async function checkAuthRole(): Promise<number | null> {
+  if (inFlightAuthCheck) return inFlightAuthCheck;
+  inFlightAuthCheck = (async () => {
+    try {
+      const basePath =
+        process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+      const res = await fetch(`${basePath}/api/auth/check`);
+      if (res.ok) {
+        const data = await res.json();
+        return data?.roleId ?? null;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to revalidate role:", err);
+      return null;
+    } finally {
+      // Clear in-flight promise so future checks can run fresh
+      setTimeout(() => {
+        inFlightAuthCheck = null;
+      }, 500);
+    }
+  })();
+  return inFlightAuthCheck;
+}
+
 export function useNavItems() {
   const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,27 +128,18 @@ export function useNavItems() {
       setLoading(false);
     }
 
-    // 2. Fetch from server to validate/revalidate
+    // 2. Fetch from server to validate/revalidate (deduplicated)
     const fetchRole = async () => {
       try {
-        const basePath =
-          process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
-        const res = await fetch(`${basePath}/api/auth/check`);
-        if (res.ok) {
-          const data = await res.json();
-          const roleId = data?.roleId;
+        const roleId = await checkAuthRole();
 
-          if (roleId !== undefined && roleId !== null) {
-            localStorage.setItem("userRoleId", String(roleId));
-            if (roleId === 1) {
-              setNavItems(SUPERADMIN_NAV_ITEMS);
-            } else if (roleId === 2) {
-              setNavItems(ADMIN_NAV_ITEMS);
-            } else {
-              setNavItems([]);
-            }
+        if (roleId !== null && roleId !== undefined) {
+          localStorage.setItem("userRoleId", String(roleId));
+          if (roleId === 1) {
+            setNavItems(SUPERADMIN_NAV_ITEMS);
+          } else if (roleId === 2) {
+            setNavItems(ADMIN_NAV_ITEMS);
           } else {
-            localStorage.removeItem("userRoleId");
             setNavItems([]);
           }
         } else {

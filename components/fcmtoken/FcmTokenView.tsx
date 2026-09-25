@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -70,7 +70,7 @@ export default function FcmTokenView() {
   const [tokenToDelete, setTokenToDelete] = useState<FcmToken | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
@@ -85,11 +85,11 @@ export default function FcmTokenView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchUserData();
-  }, [userId]);
+  }, [fetchUserData]);
 
   const handleCopy = (token: FcmToken) => {
     navigator.clipboard.writeText(token.fcmtoken);

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ບໍ່ມີການເຊື່ອມຕໍ່ອິນເຕີເນັດ | Offline</title>
+  <link rel="icon" href="./icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Lao", sans-serif;
+    }
+    body {
+      background-color: #0b1120;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .background-glow {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(30, 58, 138, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      filter: blur(40px);
+    }
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 40px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .icon-container {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.6), rgba(37, 99, 235, 0.3));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
+      animation: pulse 2.5s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.85; }
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s ease;
+    }
+    .retry-btn:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -5px rgba(37, 99, 235, 0.5);
+    }
+    .retry-btn:active {
+      transform: translateY(0);
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-glow"></div>
+  <div class="card">
+    <div class="icon-container">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+    <h1>ບໍ່ມີການເຊື່ອມຕໍ່ອິນເຕີເນັດ</h1>
+    <p>ທ່ານກຳລັງຢູ່ໃນໂໝດ Offline ກະລຸນາກວດສອບສັນຍານ Wi-Fi ຫຼື Mobile Data ແລ້ວກົດລອງໃໝ່ອີກຄັ້ງ</p>
+    <button class="retry-btn" onclick="retry()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+      </svg>
+      ລອງໃໝ່ອີກຄັ້ງ (Try Again)
+    </button>
+    <div>
+      <span class="badge">EDL Meeting Notice &bull; Offline Mode</span>
+    </div>
+  </div>
+
+  <script>
+    function retry() {
+      const btn = document.querySelector('.retry-btn');
+      btn.style.opacity = '0.7';
+      btn.innerText = 'ກຳລັງກວດສອບ...';
+      if (navigator.onLine) {
+        window.location.reload();
+      } else {
+        setTimeout(() => {
+          btn.style.opacity = '1';
+          btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg> ລອງໃໝ່ອີກຄັ້ງ (Try Again)`;
+          alert('ຍັງບໍ່ສາມາດເຊື່ອມຕໍ່ໄດ້ ກະລຸນາກວດສອບສັນຍານອິນເຕີເນັດ');
+        }, 600);
+      }
+    }
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>

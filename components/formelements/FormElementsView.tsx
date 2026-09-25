@@ -521,7 +521,7 @@ export default function FormElementsView() {
 
         <Modal open={showMdModal} onClose={() => setShowMdModal(false)} title="Medium Modal" size="md">
           <p className="text-sm" style={{ color: "rgb(var(--text-secondary))" }}>
-            This is a medium modal. It's the default size and works well for most use cases, like settings or data entry.
+            This is a medium modal. It&apos;s the default size and works well for most use cases, like settings or data entry.
           </p>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setShowMdModal(false)}>Cancel</Button>

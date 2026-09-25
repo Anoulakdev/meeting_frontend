@@ -1,9 +1,11 @@
 "use client";
 
-import { ChevronDown, User, LogOut } from "lucide-react";
+import { ChevronDown, User, LogOut, KeyRound } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { InstallButton } from "@/components/pwa";
+import { getCurrentUser, clearUserCache } from "@/lib/auth";
 
 export function ProfileDropdown() {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -25,19 +27,11 @@ export function ProfileDropdown() {
   }, [profileOpen]);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
-        const res = await fetch(`${basePath}/api/auth/me`);
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user", err);
-      }
+    const loadUser = async () => {
+      const data = await getCurrentUser();
+      if (data) setUser(data);
     };
-    fetchUser();
+    loadUser();
   }, []);
 
   const handleLogout = async () => {
@@ -47,7 +41,8 @@ export function ProfileDropdown() {
     try {
       await fetch(`${basePath}/api/auth/logout`, { method: "POST" });
     } finally {
-      // Clear cached role from local storage
+      // Clear cached role and user from local storage and memory
+      clearUserCache();
       localStorage.removeItem("userRoleId");
       // Always redirect even if the request fails with a full page reload
       window.location.href = `${basePath}/signin`;
@@ -173,6 +168,31 @@ export function ProfileDropdown() {
               />
               <span className="font-medium">ໂປຣຟາຍ</span>
             </button>
+
+            {/* Change Password Option */}
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-150 group/item"
+              style={{ color: "rgb(var(--text-secondary))" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgb(var(--bg))";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+              onClick={() => {
+                setProfileOpen(false);
+                router.push("/changepassword");
+              }}
+            >
+              <KeyRound
+                className="w-4 h-4 transition-transform group-hover/item:scale-110"
+                strokeWidth={2}
+              />
+              <span className="font-medium">ປ່ຽນລະຫັດຜ່ານ</span>
+            </button>
+
+            {/* Install App Option (PWA) */}
+            <InstallButton variant="menu" onInstalled={() => setProfileOpen(false)} />
 
             {/* Divider */}
             <div

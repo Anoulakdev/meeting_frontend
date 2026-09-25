@@ -22,10 +22,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token หมดอายุหรือไม่ถูกต้อง → ออกไปหน้า login
+      // Token หมดอายุหรือไม่ถูกต้อง → ออกไปหน้า login (ยกเว้นอยู่หน้า auth อยู่แล้ว)
       if (typeof window !== "undefined") {
-        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
-        window.location.href = `${basePath}/signin`;
+        const path = window.location.pathname;
+        const isAuthPage = path.endsWith("/signin") || path.endsWith("/signup") || path.endsWith("/resetpassword");
+        if (!isAuthPage) {
+          const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
+          window.location.href = `${basePath}/signin`;
+        }
       }
     }
     return Promise.reject(error);

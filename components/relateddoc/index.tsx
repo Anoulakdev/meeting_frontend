@@ -324,7 +324,7 @@ export function RelatedDocument() {
         },
       },
     ],
-    []
+    [router]
   );
 
   const table = useReactTable({

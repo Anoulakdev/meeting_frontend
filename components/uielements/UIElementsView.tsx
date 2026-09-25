@@ -369,7 +369,7 @@ export function UIElementsView() {
                       <h3 className="font-semibold" style={{ color: "rgb(var(--text-primary))" }}>Popover Header</h3>
                     </div>
                     <div className="px-4 py-3" style={{ color: "rgb(var(--text-secondary))" }}>
-                      <p>And here's some amazing content. It's very engaging. Right?</p>
+                      <p>And here&apos;s some amazing content. It&apos;s very engaging. Right?</p>
                     </div>
                   </div>
                 </div>

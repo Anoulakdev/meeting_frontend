@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       secure: isProduction,
       sameSite: "lax",
       path: "/",
+      maxAge: 3600, // 1 hour matching backend JWT expiration
     });
   }
 

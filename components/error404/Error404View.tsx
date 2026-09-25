@@ -81,7 +81,7 @@ export function Error404View() {
             Page Not Found
           </h2>
           <p className="text-lg mb-10 max-w-md leading-relaxed" style={{ color: "rgb(var(--text-secondary))" }}>
-            We've explored deep space, but couldn't find the page you're searching for. It might have been moved, deleted, or never existed.
+            We&apos;ve explored deep space, but couldn&apos;t find the page you&apos;re searching for. It might have been moved, deleted, or never existed.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">

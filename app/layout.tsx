@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { PwaProvider, InstallBanner } from "@/components/pwa";
+
 const notoSansLao = Noto_Sans_Lao({
   subsets: ['lao'],
   weight: ['300', '400', '500', '600', '700'],
@@ -16,14 +18,32 @@ const notoSansLao = Noto_Sans_Lao({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s",
-    default: "AdminOS",
+    template: "%s | ລະບົບແຈ້ງເຕືອນປະຊຸມ",
+    default: "ລະບົບແຈ້ງເຕືອນປະຊຸມ (EDL Meeting Notice)",
   },
-  description: "Modern Admin Dashboard Template",
+  description: "ລະບົບແຈ້ງເຕືອນ ແລະ ຕິດຕາມເອກະສານກອງປະຊຸມ EDL",
+  applicationName: "ລະບົບແຈ້ງເຕືອນປະຊຸມ",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EDL Meeting",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: import("next").Viewport = {
-  themeColor: "#000000",
+  themeColor: "#1e3a8a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -48,10 +68,13 @@ export default function RootLayout({
         </div>
 
         <ThemeProvider>
-          <AppLayout>
-            {children}
-          </AppLayout>
-          <ToastContainer position="top-right" />
+          <PwaProvider>
+            <AppLayout>
+              {children}
+            </AppLayout>
+            <InstallBanner />
+            <ToastContainer position="top-right" />
+          </PwaProvider>
         </ThemeProvider>
       </body>
     </html>

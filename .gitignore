@@ -31,7 +31,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# public
-/public/sw.js
+# public workbox generated files (if any)
 /public/workbox-*.js
 /public/workbox-*.map

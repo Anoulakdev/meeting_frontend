@@ -48,7 +48,7 @@ export default function ResetPasswordView() {
               Secure your account.
             </h2>
             <p className="text-lg text-white/80 font-medium max-w-md">
-              We'll help you get back to managing your dashboard in no time. Fast and secure recovery.
+              We&apos;ll help you get back to managing your dashboard in no time. Fast and secure recovery.
             </p>
           </div>
           
@@ -75,7 +75,7 @@ export default function ResetPasswordView() {
                     Reset Password
                   </h1>
                   <p className="text-sm font-medium" style={{ color: "rgb(var(--text-secondary))" }}>
-                    Enter your email address and we'll send you a link to reset your password.
+                    Enter your email address and we&apos;ll send you a link to reset your password.
                   </p>
                 </div>
 
@@ -125,7 +125,7 @@ export default function ResetPasswordView() {
                   Check your inbox
                 </h1>
                 <p className="text-sm font-medium mb-8" style={{ color: "rgb(var(--text-secondary))" }}>
-                  We've sent a password reset link to <br/>
+                  We&apos;ve sent a password reset link to <br/>
                   <span className="font-bold" style={{ color: "rgb(var(--text-primary))" }}>{email}</span>
                 </p>
                 <button

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   Search,
   Edit2,
@@ -164,10 +165,11 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
+  const debouncedSearch = useDebounce(globalFilter, 300);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const requestIdRef = useRef(0);
 
-  const [roles, setRoles] = useState<{ id: number, name: string }[]>([]);
   const router = useRouter();
 
   // Controlled Pagination and total counts
@@ -177,6 +179,11 @@ export function UserManagement() {
   });
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // Reset to first page when search or column filters change
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [debouncedSearch, columnFilters]);
 
   // States for filter dropdown data
   const [departmentList, setDepartmentList] = useState<{ id: number; department_name: string }[]>([]);
@@ -218,13 +225,13 @@ export function UserManagement() {
         setDivisionList(res.data);
 
         // Reset division filter if it's not valid for the new department
-        const selectedDivisionId = (columnFilters.find(f => f.id === "division")?.value as string) || "";
-        if (selectedDivisionId) {
-          const exists = res.data.some((d: any) => String(d.id) === selectedDivisionId);
-          if (!exists) {
-            setColumnFilters(prev => prev.filter(f => f.id !== "division"));
+        setColumnFilters((prev) => {
+          const currentDiv = prev.find((f) => f.id === "division")?.value as string | undefined;
+          if (currentDiv && !res.data.some((d: any) => String(d.id) === currentDiv)) {
+            return prev.filter((f) => f.id !== "division");
           }
-        }
+          return prev;
+        });
       } catch (err) {
         console.error("Failed to fetch divisions", err);
       }
@@ -278,6 +285,7 @@ export function UserManagement() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
+    const currentRequestId = ++requestIdRef.current;
     setLoading(true);
     try {
       const depFilter = (columnFilters.find(f => f.id === "department")?.value as string) || "";
@@ -291,8 +299,8 @@ export function UserManagement() {
         limit: pagination.pageSize,
       };
 
-      if (globalFilter.trim()) {
-        params.search = globalFilter.trim();
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
       }
       if (depFilter) params.departmentId = Number(depFilter);
       if (divFilter) params.divisionId = Number(divFilter);
@@ -301,6 +309,8 @@ export function UserManagement() {
       if (statusFilter) params.status = statusFilter;
 
       const res = await apiClient.get<any>("/api/users", { params });
+
+      if (currentRequestId !== requestIdRef.current) return;
 
       let apiData: ApiUser[] = [];
       let total = 0;
@@ -342,11 +352,14 @@ export function UserManagement() {
       setTotalCount(total);
       setTotalPages(totalPagesCount);
     } catch (err) {
+      if (currentRequestId !== requestIdRef.current) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [pagination.pageIndex, pagination.pageSize, globalFilter, columnFilters]);
+  }, [pagination.pageIndex, pagination.pageSize, debouncedSearch, columnFilters]);
 
   useEffect(() => {
     fetchUsers();
@@ -376,7 +389,7 @@ export function UserManagement() {
     await fetchUsers();
   };
 
-  const toggleStatus = async (user: User) => {
+  const toggleStatus = useCallback(async (user: User) => {
     const currentStatus = user.raw.status;
     const nextStatus = currentStatus === "A" ? "C" : "A";
 
@@ -388,7 +401,7 @@ export function UserManagement() {
       console.error(error);
       toast.error("ເກີດຂໍ້ຜິດພາດໃນການອັບເດດສະຖານະ!");
     }
-  };
+  }, [fetchUsers]);
 
   const handleResetPassword = async () => {
     if (!userToReset) return;
@@ -723,7 +736,7 @@ export function UserManagement() {
         },
       },
     ],
-    []
+    [router, toggleStatus]
   );
 
   const table = useReactTable({

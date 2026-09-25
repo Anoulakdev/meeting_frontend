@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { User, Mail, Phone, Loader2, Building, Info } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
 
 export default function ProfileView() {
   const [user, setUser] = useState<any>(null);
@@ -10,10 +11,8 @@ export default function ProfileView() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const basePath = process.env.NODE_ENV === "production" ? "/meeting_notice" : "";
-        const res = await fetch(`${basePath}/api/auth/me`);
-        if (res.ok) {
-          const data = await res.json();
+        const data = await getCurrentUser();
+        if (data) {
           setUser(data);
         }
       } catch (err) {
